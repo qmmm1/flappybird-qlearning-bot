@@ -27,33 +27,33 @@ IMAGES, SOUNDS, HITMASKS = {}, {}, {}
 PLAYERS_LIST = (
     # red bird
     (
-        "data/assets/sprites/redbird-upflap.png",
-        "data/assets/sprites/redbird-midflap.png",
-        "data/assets/sprites/redbird-downflap.png",
+        "../data/assets/sprites/redbird-upflap.png",
+        "../data/assets/sprites/redbird-midflap.png",
+        "../data/assets/sprites/redbird-downflap.png",
     ),
     # blue bird
     (
         # amount by which base can maximum shift to left
-        "data/assets/sprites/bluebird-upflap.png",
-        "data/assets/sprites/bluebird-midflap.png",
-        "data/assets/sprites/bluebird-downflap.png",
+        "../data/assets/sprites/bluebird-upflap.png",
+        "../data/assets/sprites/bluebird-midflap.png",
+        "../data/assets/sprites/bluebird-downflap.png",
     ),
     # yellow bird
     (
-        "data/assets/sprites/yellowbird-upflap.png",
-        "data/assets/sprites/yellowbird-midflap.png",
-        "data/assets/sprites/yellowbird-downflap.png",
+        "../data/assets/sprites/yellowbird-upflap.png",
+        "../data/assets/sprites/yellowbird-midflap.png",
+        "../data/assets/sprites/yellowbird-downflap.png",
     ),
 )
 
 # list of backgrounds
 BACKGROUNDS_LIST = (
-    "data/assets/sprites/background-day.png",
-    "data/assets/sprites/background-night.png",
+    "../data/assets/sprites/background-day.png",
+    "../data/assets/sprites/background-night.png",
 )
 
 # list of pipes
-PIPES_LIST = ("data/assets/sprites/pipe-green.png", "data/assets/sprites/pipe-red.png")
+PIPES_LIST = ("../data/assets/sprites/pipe-green.png", "../data/assets/sprites/pipe-red.png")
 
 
 def main():
@@ -75,24 +75,24 @@ def main():
 
     # numbers sprites for score display
     IMAGES["numbers"] = (
-        pygame.image.load("data/assets/sprites/0.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/1.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/2.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/3.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/4.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/5.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/6.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/7.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/8.png").convert_alpha(),
-        pygame.image.load("data/assets/sprites/9.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/0.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/1.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/2.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/3.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/4.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/5.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/6.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/7.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/8.png").convert_alpha(),
+        pygame.image.load("../data/assets/sprites/9.png").convert_alpha(),
     )
 
     # game over sprite
-    IMAGES["gameover"] = pygame.image.load("data/assets/sprites/gameover.png").convert_alpha()
+    IMAGES["gameover"] = pygame.image.load("../data/assets/sprites/gameover.png").convert_alpha()
     # message sprite for welcome screen
-    IMAGES["message"] = pygame.image.load("data/assets/sprites/message.png").convert_alpha()
+    IMAGES["message"] = pygame.image.load("../data/assets/sprites/message.png").convert_alpha()
     # base (ground) sprite
-    IMAGES["base"] = pygame.image.load("data/assets/sprites/base.png").convert_alpha()
+    IMAGES["base"] = pygame.image.load("../data/assets/sprites/base.png").convert_alpha()
 
     # sounds
     if "win" in sys.platform:
@@ -100,11 +100,11 @@ def main():
     else:
         soundExt = ".ogg"
 
-    SOUNDS["die"] = pygame.mixer.Sound("data/assets/audio/die" + soundExt)
-    SOUNDS["hit"] = pygame.mixer.Sound("data/assets/audio/hit" + soundExt)
-    SOUNDS["point"] = pygame.mixer.Sound("data/assets/audio/point" + soundExt)
-    SOUNDS["swoosh"] = pygame.mixer.Sound("data/assets/audio/swoosh" + soundExt)
-    SOUNDS["wing"] = pygame.mixer.Sound("data/assets/audio/wing" + soundExt)
+    SOUNDS["die"] = pygame.mixer.Sound("../data/assets/audio/die" + soundExt)
+    SOUNDS["hit"] = pygame.mixer.Sound("../data/assets/audio/hit" + soundExt)
+    SOUNDS["point"] = pygame.mixer.Sound("../data/assets/audio/point" + soundExt)
+    SOUNDS["swoosh"] = pygame.mixer.Sound("../data/assets/audio/swoosh" + soundExt)
+    SOUNDS["wing"] = pygame.mixer.Sound("../data/assets/audio/wing" + soundExt)
 
     while True:
         # select random background sprites

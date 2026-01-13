@@ -45,7 +45,7 @@ def main():
     VERBOSE = args.verbose
 
     # load dumped HITMASKS
-    with open("data/hitmasks_data.pkl", "rb") as input:
+    with open("../data/hitmasks_data.pkl", "rb") as input:
         HITMASKS = pickle.load(input)
 
     while True:

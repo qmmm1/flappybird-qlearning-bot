@@ -12,6 +12,6 @@ for x in chain(list(range(-40, 140, 10)), list(range(140, 421, 70))):
             qval[str(x) + "_" + str(y) + "_" + str(v)] = [0, 0]
 
 
-fd = open("data/qvalues.json", "w")
+fd = open("../data/qvalues.json", "w")
 json.dump(qval, fd)
 fd.close()
