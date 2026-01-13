@@ -44,16 +44,34 @@ PLAYERS_LIST = (
         "../data/assets/sprites/yellowbird-midflap.png",
         "../data/assets/sprites/yellowbird-downflap.png",
     ),
+        (
+        "../data/assets/sprites/redbird-fade-upflap.png",
+        "../data/assets/sprites/redbird-fade-midflap.png",
+        "../data/assets/sprites/redbird-fade-downflap.png",
+    ),
+        (
+        "../data/assets/sprites/bluebird-anger-upflap.png",
+        "../data/assets/sprites/bluebird-anger-midflap.png",
+        "../data/assets/sprites/bluebird-anger-downflap.png",
+    ),
+       (
+         "../data/assets/sprites/fadebird-upflap.png",
+        "../data/assets/sprites/fadebird-midflap.png",
+        "../data/assets/sprites/fadebird-downflap.png",
+    ),
 )
 
 # list of backgrounds
 BACKGROUNDS_LIST = (
     "../data/assets/sprites/background-day.png",
     "../data/assets/sprites/background-night.png",
+    "../data/assets/sprites/background-future.png",
+    "../data/assets/sprites/background-war.png",
+    "../data/assets/sprites/background-mid.png",
 )
 
 # list of pipes
-PIPES_LIST = ("../data/assets/sprites/pipe-green.png", "../data/assets/sprites/pipe-red.png")
+PIPES_LIST = ("../data/assets/sprites/pipe-green.png", "../data/assets/sprites/pipe-red.png","../data/assets/sprites/pipe-grey.png")
 
 
 def main():
