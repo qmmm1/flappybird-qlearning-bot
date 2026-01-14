@@ -1,6 +1,5 @@
 import json
 import os
-import random
 
 
 class Bot(object):
@@ -13,7 +12,7 @@ class Bot(object):
     def __init__(self):
         self.gameCNT = 0  # Game count of current run, incremented after every death
         self.DUMPING_N = 25  # Number of iterations to dump Q values to JSON after
-        self.discount = 1
+        self.discount = 1.0
         self.r = {0: 1, 1: -1000}  # Reward function
         self.lr = 0.7
 
@@ -43,31 +42,32 @@ class Bot(object):
             # 初始化一些基础状态
             self.qvalues = {"420_240_0": [0.0, 0.0]}
 
-    import random
-
     def act(self, xdif, ydif, vel):
+        """
+        Chooses the best action with respect to the current state - Chooses 0 (don't flap) to tie-break
+        """
         state = self.map_state(xdif, ydif, vel)
 
+        # 如果状态不存在，初始化它
         if state not in self.qvalues:
+            self.qvalues[state] = [0.0, 0.0]  # [不跳跃, 跳跃]
+
+        # 确保状态值存在且是列表
+        if not isinstance(self.qvalues[state], list) or len(self.qvalues[state]) < 2:
             self.qvalues[state] = [0.0, 0.0]
 
-        self.moves.append((self.last_state, self.last_action, state))
-        self.last_state = state
+        self.moves.append(
+            (self.last_state, self.last_action, state)
+        )  # Add the experience to the history
 
-        # === 新增：ε-greedy 探索 ===
-        epsilon = max(0.05, 1.0 - self.gameCNT / 500.0)  # 前500局从1.0衰减到0.05
+        self.last_state = state  # Update the last_state with the current state
 
-        if random.random() < epsilon:
-            action = random.choice([0, 1])  # 随机探索
+        if self.qvalues[state][0] >= self.qvalues[state][1]:
+            self.last_action = 0
+            return 0
         else:
-            # 贪心选择（tie-break 优先不跳）
-            if self.qvalues[state][0] >= self.qvalues[state][1]:
-                action = 0
-            else:
-                action = 1
-
-        self.last_action = action
-        return action
+            self.last_action = 1
+            return 1
 
     def update_scores(self, dump_qvalues=True):
         """
@@ -79,59 +79,50 @@ class Bot(object):
         history = list(reversed(self.moves))
 
         # Flag if the bird died in the top pipe
+        # 添加错误处理，防止状态格式不正确
         try:
             high_death_flag = True if int(history[0][2].split("_")[1]) > 120 else False
         except (IndexError, ValueError):
             high_death_flag = False
 
+        # Q-learning score updates
         t = 1
         for exp in history:
             state = exp[0]
             act = exp[1]
             res_state = exp[2]
 
+            # 确保所有状态都存在
             if state not in self.qvalues:
                 self.qvalues[state] = [0.0, 0.0]
             if res_state not in self.qvalues:
                 self.qvalues[res_state] = [0.0, 0.0]
 
-            # === 方案四：基础存活奖励 + 危险区域惩罚 ===
-            try:
-                ydif = int(res_state.split("_")[1])
-            except (IndexError, ValueError):
-                ydif = 100  # 默认安全高度
-
-            # 默认使用存活奖励 self.r[0]（即 +1）
-            cur_reward = self.r[0]
-
-            # 危险区域惩罚：抑制贴管飞行
-            if ydif < 40:          # 飞得太高（接近上管道）
-                cur_reward -= 0.8
-            elif ydif > 160:       # 飞得太低（接近地面）
-                cur_reward -= 0.8
-
-            # 死亡情况：覆盖为 self.r[1]（-1000）
+            # Select reward
             if t == 1 or t == 2:
                 cur_reward = self.r[1]
-            elif high_death_flag and act == 1:
+            elif high_death_flag and act:
                 cur_reward = self.r[1]
                 high_death_flag = False
+            else:
+                cur_reward = self.r[0]
 
-            # Q-learning 更新
+            # Update - 添加错误处理
             try:
-                self.qvalues[state][act] = (1 - self.lr) * self.qvalues[state][act] + \
+                self.qvalues[state][act] = (1 - self.lr) * (self.qvalues[state][act]) + \
                                            self.lr * (cur_reward + self.discount * max(self.qvalues[res_state]))
             except (IndexError, TypeError, ValueError) as e:
+                # 如果发生错误，重新初始化该状态
                 print(f"Error updating Q-values for state {state}: {e}")
                 self.qvalues[state] = [0.0, 0.0]
 
             t += 1
 
-        self.gameCNT += 1
+        self.gameCNT += 1  # increase game count
         if dump_qvalues:
-            self.dump_qvalues()
-        self.moves = []
-    
+            self.dump_qvalues()  # Dump q values (if game count % DUMPING_N == 0)
+        self.moves = []  # clear history after updating strategies
+
     def map_state(self, xdif, ydif, vel):
         """
         Map the (xdif, ydif, vel) to the respective state, with regards to the grids
