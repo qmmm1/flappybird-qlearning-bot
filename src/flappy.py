@@ -155,7 +155,7 @@ def main():
         )
 
         if args.dump_hitmasks:
-            with open("data/hitmasks_data.pkl", "wb") as output:
+            with open("../data/hitmasks_data.pkl", "wb") as output:
                 pickle.dump(HITMASKS, output, pickle.HIGHEST_PROTOCOL)
             sys.exit()
 
