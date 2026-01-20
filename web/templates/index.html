@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird AI 训练器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-start {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+        
+        .btn-start:hover {
+            background: linear-gradient(135deg, #219653 0%, #27ae60 100%);
+            transform: translateY(-2px);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-stop:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            transform: translateY(-2px);
+        }
+        
+        .status-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .status-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .progress-bar {
+            height: 25px;
+            background: #ecf0f1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            border-radius: 12px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 5px 0;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .not-training {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            header {
+                padding: 20px;
+            }
+            
+            header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦜 Flappy Bird AI 训练器</h1>
+            <p>使用 Q-learning 算法训练智能小鸟</p>
+        </header>
+        
+        <div class="content">
+            <div class="form-section">
+                <h2>⚙️ 训练参数配置</h2>
+                
+                <div class="form-group">
+                    <label for="episodes">训练轮数 (Episodes)</label>
+                    <input type="number" id="episodes" value="100" min="1" max="10000" step="10">
+                </div>
+                
+                <div class="form-group">
+                    <label for="learning_rate">学习率 (Learning Rate)</label>
+                    <input type="number" id="learning_rate" value="0.7" min="0.1" max="1.0" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="discount_factor">折扣因子 (Discount Factor)</label>
+                    <input type="number" id="discount_factor" value="1.0" min="0" max="1.0" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="alive_reward">存活奖励 (Alive Reward)</label>
+                    <input type="number" id="alive_reward" value="1.0" min="-100" max="100" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="score_reward">得分奖励 (Score Reward)</label>
+                    <input type="number" id="score_reward" value="10.0" min="-100" max="1000" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="death_penalty">死亡惩罚 (Death Penalty)</label>
+                    <input type="number" id="death_penalty" value="-1000.0" min="-10000" max="0" step="10">
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-start" onclick="startTraining()">🚀 开始训练</button>
+                    <button class="btn-stop" onclick="stopTraining()">⏹️ 停止训练</button>
+                </div>
+            </div>
+            
+            <div class="status-section">
+                <h3>📊 训练状态</h3>
+                <div id="status-content">
+                    <div class="not-training">点击"开始训练"启动 AI 训练</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let trainingInterval = null;
+        let isTraining = false;
+        
+        async function startTraining() {
+            if (isTraining) {
+                alert('训练已在进行中！');
+                return;
+            }
+            
+            const params = {
+                episodes: parseInt(document.getElementById('episodes').value),
+                learning_rate: parseFloat(document.getElementById('learning_rate').value),
+                discount_factor: parseFloat(document.getElementById('discount_factor').value),
+                alive_reward: parseFloat(document.getElementById('alive_reward').value),
+                score_reward: parseFloat(document.getElementById('score_reward').value),
+                death_penalty: parseFloat(document.getElementById('death_penalty').value)
+            };
+            
+            // 参数验证
+            if (isNaN(params.episodes) || params.episodes < 1 || params.episodes > 10000) {
+                alert('请设置有效的训练轮数 (1-10000)');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/train', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(params)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    isTraining = true;
+                    updateStatusUI('正在启动训练...');
+                    startStatusPolling();
+                } else {
+                    alert('启动失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('网络错误: ' + error.message);
+            }
+        }
+        
+        async function stopTraining() {
+            if (!isTraining) {
+                alert('没有正在进行的训练');
+                return;
+            }
+            
+            try {
+                await fetch('/api/stop', {method: 'POST'});
+                isTraining = false;
+                clearInterval(trainingInterval);
+                updateStatusUI('训练已停止');
+            } catch (error) {
+                alert('停止失败: ' + error.message);
+            }
+        }
+        
+        function startStatusPolling() {
+            trainingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/status');
+                    const status = await response.json();
+                    
+                    if (!status.is_training) {
+                        isTraining = false;
+                        clearInterval(trainingInterval);
+                        updateStatusUI('训练已完成！', status.progress);
+                    } else {
+                        updateStatusUI('训练中...', status.progress);
+                    }
+                } catch (error) {
+                    console.error('获取状态失败:', error);
+                }
+            }, 1000);
+        }
+        
+        function updateStatusUI(message, progress = null) {
+            const statusContent = document.getElementById('status-content');
+            
+            if (progress && progress.episode) {
+                const percent = (progress.episode / progress.total_episodes) * 100;
+                const statsHTML = `
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>进度: ${progress.episode}/${progress.total_episodes}</span>
+                            <span>${Math.round(percent)}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${progress.score}</div>
+                            <div class="stat-label">当前得分</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${progress.best_score}</div>
+                            <div class="stat-label">最佳得分</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${progress.avg_score}</div>
+                            <div class="stat-label">平均得分</div>
+                        </div>
+                    </div>
+                `;
+                statusContent.innerHTML = statsHTML;
+            } else {
+                statusContent.innerHTML = `<div class="not-training">${message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird AI Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #333;
+            background-color: #70c5ce;
+        }
+        
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .info {
+            text-align: center;
+            margin-bottom: 10px;
+            max-width: 600px;
+        }
+        
+        .info h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .info p {
+            color: #666;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- 必须包含这些元素！ -->
+    <div class="info">
+        <h2>Flappy Bird AI Demo</h2>
+        <p>This AI uses a trained Q-learning model to play Flappy Bird automatically.</p>
+        <p>The AI makes decisions based on the distance to the next pipe, vertical position relative to the pipe gap, and current velocity.</p>
+        <p>Current Score: <span id="scoreValue">0</span></p>
+    </div>
+    
+    <canvas id="gameCanvas" width="288" height="512"></canvas>
+  
+    <button id="restartBtn">Restart AI Demo</button>
+
+    <!-- 脚本放在最后，确保 DOM 已加载 -->
+    <script src="{{ url_for('static', filename='js/demo.js') }}"></script>
+</body>
+</html>
