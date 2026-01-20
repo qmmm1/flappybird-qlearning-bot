@@ -48,24 +48,35 @@ class FlappyBirdAI {
 }
 
     async loadQValues() {
-        try {
-            const response = await fetch('/api/qvalues');
-            if (response.ok) {
-                this.qValues = await response.json();
-                console.log('✅ Q-values loaded successfully');
+    try {
+        const response = await fetch('/api/qvalues');
+        if (response.ok) {
+            this.qValues = await response.json();
+            console.log('✅ Q-values loaded successfully');
+
+            // 🔍 新增：检查是否存在非零 Q 值
+            const hasNonZeroQ = Object.values(this.qValues).some(
+                q => Array.isArray(q) && (q[0] !== 0 || q[1] !== 0)
+            );
+
+            if (hasNonZeroQ) {
+                console.log('🧠 Q-table contains trained (non-zero) values — AI is ready!');
             } else {
-                console.warn('⚠️ Q-values not available, using empty Q-table');
-                this.qValues = {};
+                console.warn('⚠️ Q-table loaded, but all values are [0, 0] — AI has no training!');
             }
-        } catch (error) {
-            console.error('❌ Error loading Q-values:', error);
+        } else {
+            console.warn('⚠️ Q-values not available, using empty Q-table');
             this.qValues = {};
         }
+    } catch (error) {
+        console.error('❌ Error loading Q-values:', error);
+        this.qValues = {};
     }
+}
 
     initGame() {
         // 重置状态
-        this.player.y = 256;
+        this.player.y = (512 - 24) / 2; 
         this.player.velocityY = -9;
         this.pipes = [];
         this.score = 0;
@@ -73,7 +84,6 @@ class FlappyBirdAI {
         this.gameRunning = true;
 
         // 生成初始两根管道
-        this.generatePipe();
         this.generatePipe();
 
         // 更新分数显示
@@ -131,7 +141,6 @@ class FlappyBirdAI {
         // 边界限制
         if (this.player.y < 0) {
             this.player.y = 0;
-            this.player.velocityY = 0;
         }
 
         // 更新管道
@@ -166,7 +175,7 @@ class FlappyBirdAI {
         if (closestPipe) {
             const xdif = closestPipe.x - this.player.x;
             const ydif = closestPipe.bottomY - this.player.y;
-            const vel = Math.round(this.player.velocityY);
+            const vel = Math.trunc(this.player.velocityY);
             const action = this.getAction(xdif, ydif, vel);
             if (action === 1 && this.player.y > -2 * this.player.height) {
                 this.player.velocityY = this.FLAP_VELOCITY;

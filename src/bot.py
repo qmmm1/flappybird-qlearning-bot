@@ -50,14 +50,6 @@ class Bot(object):
         """
         state = self.map_state(xdif, ydif, vel)
 
-        # 如果状态不存在，初始化它
-        if state not in self.qvalues:
-            self.qvalues[state] = [0.0, 0.0]  # [不跳跃, 跳跃]
-
-        # 确保状态值存在且是列表
-        if not isinstance(self.qvalues[state], list) or len(self.qvalues[state]) < 2:
-            self.qvalues[state] = [0.0, 0.0]
-
         self.moves.append(
             (self.last_state, self.last_action, state)
         )  # Add the experience to the history
@@ -75,17 +67,10 @@ class Bot(object):
         """
         Update qvalues via iterating over experiences
         """
-        if not self.moves:
-            return
-
         history = list(reversed(self.moves))
 
         # Flag if the bird died in the top pipe
-        # 添加错误处理，防止状态格式不正确
-        try:
-            high_death_flag = True if int(history[0][2].split("_")[1]) > 120 else False
-        except (IndexError, ValueError):
-            high_death_flag = False
+        high_death_flag = True if int(history[0][2].split("_")[1]) > 120 else False
 
         # Q-learning score updates
         t = 1
@@ -93,12 +78,6 @@ class Bot(object):
             state = exp[0]
             act = exp[1]
             res_state = exp[2]
-
-            # 确保所有状态都存在
-            if state not in self.qvalues:
-                self.qvalues[state] = [0.0, 0.0]
-            if res_state not in self.qvalues:
-                self.qvalues[res_state] = [0.0, 0.0]
 
             # Select reward
             if t == 1 or t == 2:
@@ -109,14 +88,9 @@ class Bot(object):
             else:
                 cur_reward = self.r[0]
 
-            # Update - 添加错误处理
-            try:
-                self.qvalues[state][act] = (1 - self.lr) * (self.qvalues[state][act]) + \
-                                           self.lr * (cur_reward + self.discount * max(self.qvalues[res_state]))
-            except (IndexError, TypeError, ValueError) as e:
-                # 如果发生错误，重新初始化该状态
-                print(f"Error updating Q-values for state {state}: {e}")
-                self.qvalues[state] = [0.0, 0.0]
+            # Update
+            self.qvalues[state][act] = (1-self.lr) * (self.qvalues[state][act]) + \
+                                       self.lr * ( cur_reward + self.discount*max(self.qvalues[res_state]) )
 
             t += 1
 
