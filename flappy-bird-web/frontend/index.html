@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird AI 训练平台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="container">
+    <!-- 标题栏 -->
+    <header class="header">
+        <div class="logo">
+            <i class="fas fa-dove"></i>
+            <h1>Flappy Bird AI 训练平台</h1>
+        </div>
+        <div class="status-info">
+                <span id="connection-status" class="status-connected">
+                    <i class="fas fa-circle"></i> 纯前端模式
+                </span>
+            <span id="game-status" class="status-ready">
+                    <i class="fas fa-play"></i> 准备就绪
+                </span>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <!-- 左侧控制台区域 -->
+        <section class="control-panel">
+            <!-- 功能选择 -->
+            <div class="panel-section">
+                <h2><i class="fas fa-sliders-h"></i> 训练控制</h2>
+                <div class="function-select">
+                    <label for="function-select">选择训练模式：</label>
+                    <select id="function-select" class="dropdown">
+                        <option value="train_with_display">训练并显示（推荐）</option>
+                        <option value="initialize_qvalues">初始化Q值</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 参数设置 -->
+            <div class="panel-section">
+                <h2><i class="fas fa-cog"></i> 参数设置</h2>
+                <div class="parameter-grid">
+                    <div class="param-group">
+                        <label for="iterations">迭代次数：</label>
+                        <input type="number" id="iterations" value="1000" min="1" max="100000">
+                        <span class="param-hint">建议: 1000-10000</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="display-freq">显示频率：</label>
+                        <input type="number" id="display-freq" value="10" min="1" max="100">
+                        <span class="param-hint">每N次显示一次</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="fps">FPS帧率：</label>
+                        <input type="number" id="fps" value="60" min="1" max="120">
+                        <span class="param-hint">游戏帧率</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="learning-rate">学习率：</label>
+                        <input type="number" id="learning-rate" value="0.7" min="0.01" max="1" step="0.01">
+                        <span class="param-hint">α值 (0.01-1)</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="discount-factor">折扣因子：</label>
+                        <input type="number" id="discount-factor" value="1.0" min="0.1" max="1" step="0.1">
+                        <span class="param-hint">γ值 (0.1-1)</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="reward-alive">生存奖励：</label>
+                        <input type="number" id="reward-alive" value="1" min="-100" max="100">
+                        <span class="param-hint">存活奖励值</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="reward-death">死亡惩罚：</label>
+                        <input type="number" id="reward-death" value="-1000" min="-10000" max="0">
+                        <span class="param-hint">死亡惩罚值</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="exploration-rate">探索概率：</label>
+                        <input type="number" id="exploration-rate" value="0.1" min="0" max="1" step="0.05">
+                        <span class="param-hint">ε (0-1)</span>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox">
+                        <input type="checkbox" id="verbose" checked>
+                        <span>详细输出</span>
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" id="use-epsilon" checked>
+                        <span>使用ε-贪婪策略</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div class="panel-section">
+                <h2><i class="fas fa-gamepad"></i> 操作控制</h2>
+                <div class="button-group">
+                    <button id="start-btn" class="btn btn-primary">
+                        <i class="fas fa-play"></i> 开始训练
+                    </button>
+                    <button id="pause-btn" class="btn btn-secondary" disabled>
+                        <i class="fas fa-pause"></i> 暂停
+                    </button>
+                    <button id="stop-btn" class="btn btn-danger" disabled>
+                        <i class="fas fa-stop"></i> 停止
+                    </button>
+                    <button id="reset-btn" class="btn btn-warning">
+                        <i class="fas fa-redo"></i> 重置训练
+                    </button>
+                </div>
+            </div>
+
+            <!-- 训练统计 -->
+            <div class="panel-section">
+                <h2><i class="fas fa-chart-line"></i> 训练统计</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">当前迭代：</span>
+                        <span id="current-iter" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">最高分数：</span>
+                        <span id="max-score" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">平均分数：</span>
+                        <span id="avg-score" class="stat-value">0.0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">训练时间：</span>
+                        <span id="training-time" class="stat-value">00:00</span>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label">训练进度</div>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progress-text">0%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧游戏区域 -->
+        <section class="game-area">
+            <!-- 游戏画布容器 -->
+            <div class="game-container">
+                <div class="game-header">
+                    <h2><i class="fas fa-gamepad"></i> Flappy Bird 游戏界面</h2>
+                    <div class="game-scores">
+                        <div class="score-display">
+                            <span class="score-label">当前分数：</span>
+                            <span id="current-score" class="score-value">0</span>
+                        </div>
+                        <div class="score-display">
+                            <span class="score-label">最高分：</span>
+                            <span id="best-score" class="score-value">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-canvas-container">
+                    <!-- 游戏画布 -->
+                    <canvas id="game-canvas" width="288" height="512"></canvas>
+
+                    <!-- 游戏状态覆盖层 -->
+                    <div id="game-overlay" class="game-overlay active">
+                        <div id="welcome-screen" class="overlay-content active">
+                            <h3>Flappy Bird AI</h3>
+                            <p>前端训练平台</p>
+                            <button id="start-game-btn" class="btn btn-primary">
+                                <i class="fas fa-play"></i> 开始训练演示
+                            </button>
+                        </div>
+                        <div id="game-over-screen" class="overlay-content">
+                            <h3>游戏结束</h3>
+                            <p>最终分数: <span id="final-score">0</span></p>
+                            <button id="restart-game-btn" class="btn btn-primary">
+                                <i class="fas fa-redo"></i> 继续训练
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-controls">
+                    <button id="flap-btn" class="btn btn-game">
+                        <i class="fas fa-arrow-up"></i> 拍打翅膀
+                    </button>
+                    <button id="toggle-sound" class="btn btn-game">
+                        <i class="fas fa-volume-up"></i> 声音
+                    </button>
+                </div>
+            </div>
+
+            <!-- 控制台输出 -->
+            <div class="console-container">
+                <div class="console-header">
+                    <h3><i class="fas fa-terminal"></i> 控制台输出</h3>
+                    <div class="console-actions">
+                        <button id="clear-console" class="btn btn-small">
+                            <i class="fas fa-trash"></i> 清除
+                        </button>
+                        <button id="copy-console" class="btn btn-small">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                    </div>
+                </div>
+                <div class="console-output" id="console-output">
+                    <div class="console-message info">
+                        <span class="timestamp" id="timestamp-start">[12:00:00]</span>
+                        <span class="message">Flappy Bird AI 前端训练平台已启动</span>
+                    </div>
+                    <div class="console-message info">
+                        <span class="timestamp">[12:00:01]</span>
+                        <span class="message">选择训练模式并设置参数，然后点击"开始训练"</span>
+                    </div>
+                </div>
+                <div class="console-input">
+                    <input type="text" id="console-input" placeholder="输入命令 (输入 help 查看帮助)...">
+                    <button id="send-command" class="btn btn-small">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 底部信息栏 -->
+    <footer class="footer">
+        <div class="footer-info">
+            <span><i class="fas fa-code"></i> 基于 Q-Learning 的 Flappy Bird AI</span>
+            <span><i class="fas fa-server"></i> 运行模式: <span id="server-status">纯前端</span></span>
+            <span><i class="fas fa-memory"></i> Q值数量: <span id="qvalues-count">0</span></span>
+        </div>
+        <div class="footer-links">
+            <a href="#" id="help-link"><i class="fas fa-question-circle"></i> 帮助</a>
+            <a href="#" id="download-qvalues"><i class="fas fa-download"></i> 导出Q值</a>
+        </div>
+    </footer>
+</div>
+
+<!-- JavaScript文件 -->
+<script src="js/bot.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
