@@ -12,7 +12,7 @@ class FlappyBirdAI {
     this.canvas.height = 512;
 
     // === 第一步：定义所有状态属性 ===
-    this.PIPE_GAP_SIZE = 100;
+    this.PIPE_GAP_SIZE = 120;
     this.BASE_Y = 512 * 0.79;
     this.PIPE_VELOCITY_X = -4;
     this.GRAVITY = 1;
@@ -246,11 +246,14 @@ class FlappyBirdAI {
         }
     }
 
+    // 在 gameLoop 中加延迟（会卡顿！）
     gameLoop() {
         this.update();
         this.render();
         if (this.gameRunning) {
-            requestAnimationFrame(() => this.gameLoop());
+            setTimeout(() => {
+                requestAnimationFrame(() => this.gameLoop());
+            }, 50); // 限制 ～20 FPS
         }
     }
 }

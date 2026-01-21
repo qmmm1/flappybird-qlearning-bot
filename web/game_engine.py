@@ -16,7 +16,7 @@ sys.path.append(project_root)
 # Constants from original flappy.py
 SCREENWIDTH = 288
 SCREENHEIGHT = 512
-PIPEGAPSIZE = 100  # gap between upper and lower part of pipe
+PIPEGAPSIZE = 120 # gap between upper and lower part of pipe
 BASEY = SCREENHEIGHT * 0.79
 
 # Image dimensions (from original code)

@@ -1,2 +1,2 @@
 # requirements_web.txt
-Flask>=2.0.0
+Flask==3.1.2

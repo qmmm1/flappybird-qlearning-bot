@@ -1,5 +1,6 @@
 import json
 import os
+import random
 
 
 class Bot(object):
@@ -17,6 +18,7 @@ class Bot(object):
         self.lr = lr if lr is not None else 0.7
         self.discount = discount if discount is not None else 1.0
         self.r = r if r is not None else {0: 1, 1: -1000}  # 默认奖励函数
+        self.epsilon =0.1
 
         # ✅ 修正：qfile 是完整文件路径，不是目录！
         if qfile is not None:
@@ -42,20 +44,16 @@ class Bot(object):
             print(f"Q-values file not found or invalid: {self.qfile}. Initializing empty Q-values.")
             self.qvalues = {"420_240_0": [0.0, 0.0]}
 
+
     def act(self, xdif, ydif, vel):
-        """
-        Chooses the best action with respect to the current state - Chooses 0 (don't flap) to tie-break
-        """
         state = self.map_state(xdif, ydif, vel)
         if state not in self.qvalues:
-            self.qvalues[state] = [0.0, 0.0] 
-
-        self.moves.append(
-            (self.last_state, self.last_action, state)
-        )  # Add the experience to the history
-
-        self.last_state = state  # Update the last_state with the current state
-
+            self.qvalues[state] = [0.0, 0.0]
+        
+        self.moves.append((self.last_state, self.last_action, state))
+        self.last_state = state
+        
+        # 纯贪心：平局时选 0（不 flap）
         if self.qvalues[state][0] >= self.qvalues[state][1]:
             self.last_action = 0
             return 0
