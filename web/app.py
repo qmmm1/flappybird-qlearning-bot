@@ -6,10 +6,11 @@ Provides REST API for configuring and running Q-learning training sessions
 
 import os
 import json
+import glob
 import threading
 import time
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, session,jsonify, render_template, send_from_directory
 
 # Add project root to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +19,7 @@ if project_root not in os.sys.path:
     os.sys.path.insert(0, project_root)
 
 try:
-    from src.bot import Bot
+    from bot import Bot
     from game_engine import HeadlessFlappyGame
 except ImportError as e:
     print(f"Import error: {e}")
@@ -48,8 +49,16 @@ app = Flask(
     template_folder=os.path.join(web_dir, 'templates'),
     static_folder=os.path.join(web_dir, 'static')
 )
-app.secret_key = 'flappy_bird_ai_training_secret_key_2026'
 
+app.secret_key = 'flappy_bird_ai_training_secret_key_2026'
+USER_QDATA_DIR = os.path.join(os.path.dirname(__file__), "user_data")
+os.makedirs(USER_QDATA_DIR, exist_ok=True)
+
+def get_user_qfile():
+    """返回当前用户的 Q 表文件路径"""
+    if 'user_id' not in session:
+        session['user_id'] = os.urandom(16).hex()
+    return os.path.join(USER_QDATA_DIR, f"qvalues_{session['user_id']}.json")
 # Ensure data directory exists
 data_dir = os.path.join(project_root, 'data')
 os.makedirs(data_dir, exist_ok=True)
@@ -65,14 +74,14 @@ def demo():
 
 @app.route('/api/qvalues')
 def get_qvalues():
-    """提供训练好的 Q-values 数据"""
-    qvalues_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'qvalues.json')
+    """提供当前用户的 Q-values 数据"""
+    user_qfile = get_user_qfile()
     try:
-        with open(qvalues_path, 'r') as f:
+        with open(user_qfile, 'r') as f:
             qvalues = json.load(f)
         return jsonify(qvalues)
     except FileNotFoundError:
-        return jsonify({}), 404
+        return jsonify({})  # 返回空对象，不报错
 @app.route('/api/train', methods=['POST'])
 def start_training():
     """Start a new training session with provided parameters"""
@@ -147,11 +156,14 @@ def start_training():
             },
             'results': []
         })
-        
+        user_qfile = get_user_qfile()
         # Start training in a separate thread
+        if os.path.exists(user_qfile):
+            os.remove(user_qfile)  # 删除旧 Q 表
+            print(f"[INFO] Cleared existing Q-table: {user_qfile}")
         training_thread = threading.Thread(
             target=run_training_session,
-            args=(episodes, learning_rate, discount_factor, alive_reward, death_penalty)
+            args=(episodes, learning_rate, discount_factor, alive_reward, death_penalty, user_qfile)
         )
         training_thread.daemon = True
         training_thread.start()
@@ -215,7 +227,7 @@ def serve_template(filename):
     """This route is not typically needed as render_template handles templates"""
     return "Template access not allowed", 403
 
-def run_training_session(episodes, learning_rate, discount_factor, alive_reward, death_penalty):
+def run_training_session(episodes, learning_rate, discount_factor, alive_reward, death_penalty,user_qfile):
     """
     Run the actual training session in a separate thread
     
@@ -233,7 +245,8 @@ def run_training_session(episodes, learning_rate, discount_factor, alive_reward,
         bot_reward_config = {0: alive_reward, 1: death_penalty}
         
         # Initialize bot and game with user parameters
-        bot = Bot(lr=learning_rate, discount=discount_factor, r=bot_reward_config)
+        # Initialize bot with user-specific Q-table
+        bot = Bot(lr=learning_rate, discount=discount_factor, r=bot_reward_config, qfile=user_qfile)
         # For game engine, we still pass the original format but only use alive and death
         game_reward_config = {'alive': alive_reward, 'score': 0.0, 'death': death_penalty}
         game = HeadlessFlappyGame(reward_function=game_reward_config)
@@ -306,6 +319,32 @@ def run_training_session(episodes, learning_rate, discount_factor, alive_reward,
         training_status['is_training'] = False
         training_status['error'] = str(e)
 
+def clear_old_qtables():
+    """
+    每 24 小时清空 user_data 目录下所有 qvalues_*.json 文件
+    """
+    while True:
+        try:
+            # 构造匹配模式
+            pattern = os.path.join(USER_QDATA_DIR, "qvalues_*.json")
+            qfiles = glob.glob(pattern)
+            
+            if qfiles:
+                print(f"[AUTO-CLEAN] Found {len(qfiles)} Q-table files to remove.")
+                for f in qfiles:
+                    os.remove(f)
+                    print(f"[AUTO-CLEAN] Deleted: {f}")
+                print(f"[AUTO-CLEAN] All Q-tables cleared at {datetime.now().isoformat()}")
+            else:
+                print(f"[AUTO-CLEAN] No Q-table files found at {datetime.now().isoformat()}")
+            
+            # 等待 24 小时（86400 秒）
+            time.sleep(86400)
+            
+        except Exception as e:
+            print(f"[AUTO-CLEAN ERROR] {e}")
+            # 出错后也继续尝试，避免线程退出
+            time.sleep(3600)  # 1 小时后重试
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
@@ -323,156 +362,9 @@ if __name__ == '__main__':
     
     # Check if template exists, if not create a basic one
     template_path = os.path.join(current_dir, 'templates', 'index.html')
-    if not os.path.exists(template_path):
-        create_basic_template()
+    cleaner_thread = threading.Thread(target=clear_old_qtables, daemon=True)
+    cleaner_thread.start()
+    print("[INFO] Auto Q-table cleaner started (runs every 24 hours).")
     
     app.run(debug=True, host='0.0.0.0', port=5000)
 
-def create_basic_template():
-    """Create a basic HTML template if it doesn't exist"""
-    template_content = '''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird AI Trainer</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .form-group { margin: 15px 0; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, button { padding: 8px; margin: 5px; width: 200px; }
-        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
-        button:hover { background: #45a049; }
-        .status { margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
-        .progress-bar { width: 100%; height: 20px; background: #ddd; border-radius: 10px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #4CAF50; transition: width 0.3s; }
-    </style>
-</head>
-<body>
-    <h1>Flappy Bird AI Trainer</h1>
-    
-    <div class="form-group">
-        <label for="episodes">Episodes:</label>
-        <input type="number" id="episodes" value="100" min="1" max="10000">
-    </div>
-    
-    <div class="form-group">
-        <label for="learning_rate">Learning Rate:</label>
-        <input type="number" id="learning_rate" value="0.7" step="0.1" min="0.1" max="1.0">
-    </div>
-    
-    <div class="form-group">
-        <label for="discount_factor">Discount Factor:</label>
-        <input type="number" id="discount_factor" value="1.0" step="0.1" min="0" max="1.0">
-    </div>
-    
-    <div class="form-group">
-        <label for="alive_reward">Alive Reward:</label>
-        <input type="number" id="alive_reward" value="1.0" step="0.1">
-    </div>
-    
-    <!-- Removed score_reward input -->
-    
-    <div class="form-group">
-        <label for="death_penalty">Death Penalty:</label>
-        <input type="number" id="death_penalty" value="-1000.0" step="10">
-    </div>
-    
-    <button onclick="startTraining()">Start Training</button>
-    <button onclick="stopTraining()">Stop Training</button>
-    
-    <div id="status" class="status">
-        <h3>Training Status</h3>
-        <div id="progress-text">Not training</div>
-        <div class="progress-bar">
-            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
-        </div>
-        <div id="results"></div>
-    </div>
-
-    <script>
-        let trainingInterval = null;
-        
-        async function startTraining() {
-            const params = {
-                episodes: parseInt(document.getElementById('episodes').value),
-                learning_rate: parseFloat(document.getElementById('learning_rate').value),
-                discount_factor: parseFloat(document.getElementById('discount_factor').value),
-                alive_reward: parseFloat(document.getElementById('alive_reward').value),
-                // Removed score_reward
-                death_penalty: parseFloat(document.getElementById('death_penalty').value)
-            };
-            
-            try {
-                const response = await fetch('/api/train', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(params)
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    alert('Training started!');
-                    startStatusPolling();
-                } else {
-                    alert('Error: ' + result.message);
-                }
-            } catch (error) {
-                alert('Error starting training: ' + error.message);
-            }
-        }
-        
-        async function stopTraining() {
-            try {
-                await fetch('/api/stop', {method: 'POST'});
-                clearInterval(trainingInterval);
-                updateStatus({is_training: false});
-            } catch (error) {
-                alert('Error stopping training: ' + error.message);
-            }
-        }
-        
-        function startStatusPolling() {
-            trainingInterval = setInterval(async () => {
-                try {
-                    const response = await fetch('/api/status');
-                    const status = await response.json();
-                    updateStatus(status);
-                    
-                    if (!status.is_training) {
-                        clearInterval(trainingInterval);
-                    }
-                } catch (error) {
-                    console.error('Error fetching status:', error);
-                }
-            }, 1000);
-        }
-        
-        function updateStatus(status) {
-            const progressText = document.getElementById('progress-text');
-            const progressFill = document.getElementById('progress-fill');
-            const resultsDiv = document.getElementById('results');
-            
-            if (status.is_training && status.progress) {
-                const progress = status.progress;
-                const percent = (progress.episode / progress.total_episodes) * 100;
-                progressFill.style.width = percent + '%';
-                progressText.innerHTML = `
-                    Episode: ${progress.episode}/${progress.total_episodes}<br>
-                    Current Score: ${progress.score}<br>
-                    Best Score: ${progress.best_score}<br>
-                    Average Score: ${progress.avg_score}
-                `;
-            } else {
-                progressFill.style.width = '0%';
-                progressText.innerHTML = 'Not training';
-            }
-        }
-    </script>
-</body>
-</html>
-'''
-    
-    with open(template_path, 'w') as f:
-        f.write(template_content)
